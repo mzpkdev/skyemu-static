@@ -1,0 +1,32 @@
+{
+  "name": "static-skyemu",
+  "version": "0.0.0",
+  "description": "Install-ready SkyEmu v5 Linux x64 binary",
+  "license": "MIT",
+  "files": [
+    "dist",
+    "types",
+    "README.md",
+    "LICENSE"
+  ],
+  "type": "module",
+  "types": "./types/index.d.ts",
+  "exports": "./dist/index.js",
+  "scripts": {
+    "build": "wa build",
+    "check": "wa check",
+    "format": "wa format",
+    "lint": "wa lint",
+    "postinstall": "node dist/cli.js",
+    "typecheck": "wa typecheck"
+  },
+  "devDependencies": {
+    "@types/node": "24.10.1",
+    "typescript": "7.0.2",
+    "webanvil": "0.0.17"
+  },
+  "engines": {
+    "node": ">=24.11.0 <25"
+  },
+  "packageManager": "pnpm@11.9.0"
+}
