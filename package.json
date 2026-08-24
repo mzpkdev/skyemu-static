@@ -11,7 +11,12 @@
   ],
   "type": "module",
   "types": "./types/index.d.ts",
-  "exports": "./dist/index.js",
+  "exports": {
+    ".": {
+      "types": "./types/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
   "scripts": {
     "build": "wa build",
     "check": "wa check",
