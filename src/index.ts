@@ -10,6 +10,7 @@ const defaultRelease = "v5"
 const defaultReleaseSha256 = "f3904c4be148a5115ddb427356857d6b7c3cefb1843d488cbe9147a92905547f"
 const defaultArchiveName = `SkyEmu-${defaultRelease}-Linux.zip`
 const binaryName = "SkyEmu"
+const downloadRetryDelay = 250
 const packageRoot = url.fileURLToPath(new URL("..", import.meta.url))
 const release = process.env.SKYEMU_STATIC_RELEASE ?? defaultRelease
 const archiveName = process.env.SKYEMU_STATIC_ARCHIVE_NAME ?? `SkyEmu-${release}-Linux.zip`
@@ -105,7 +106,7 @@ const downloadArchive = async (): Promise<Uint8Array> => {
         lastError = error
       }
 
-      if (attempt < downloadRetries) await wait(250 * 2 ** attempt)
+      if (attempt < downloadRetries) await wait(downloadRetryDelay * 2 ** attempt)
     }
   } finally {
     await dispatcher?.close()
@@ -142,7 +143,8 @@ const hasCurrentInstallation = async (): Promise<boolean> => {
 const acquireInstallationLock = async (): Promise<() => Promise<void>> => {
   const retryDelay = 100
   const totalDownloadTime = downloadTimeout * (downloadRetries + 1)
-  const maximumInstallDuration = Math.max(120_000, totalDownloadTime + 10_000)
+  const totalRetryBackoff = downloadRetryDelay * (2 ** downloadRetries - 1)
+  const maximumInstallDuration = Math.max(120_000, totalDownloadTime + totalRetryBackoff + 10_000)
   const deadline = Date.now() + maximumInstallDuration
 
   while (Date.now() < deadline) {
