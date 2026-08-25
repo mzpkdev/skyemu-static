@@ -13,6 +13,7 @@
   },
   "files": [
     "dist",
+    "scripts",
     "types",
     "README.md",
     "LICENSE"
@@ -30,7 +31,7 @@
     "check": "wa check",
     "format": "wa format",
     "lint": "wa lint",
-    "postinstall": "node dist/cli.js",
+    "postinstall": "node scripts/postinstall.mjs",
     "prepack": "wa build",
     "prepublishOnly": "wa check",
     "typecheck": "wa typecheck"
