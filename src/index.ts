@@ -179,7 +179,9 @@ const acquireInstallationLock = async (): Promise<() => Promise<void>> => {
       try {
         const lock = await fs.promises.stat(installationLock)
         if (Date.now() - lock.mtimeMs > maximumInstallDuration) {
-          await fs.promises.rm(installationLock, { force: true })
+          const staleLock = `${installationLock}.${process.pid}.${Date.now()}.stale`
+          await fs.promises.rename(installationLock, staleLock)
+          await fs.promises.rm(staleLock, { force: true })
           continue
         }
       } catch (statError: unknown) {
