@@ -40,13 +40,22 @@ const output = async (command, args, options = {}) => {
   return result
 }
 
+const buildRoot = process.env.SKYEMU_BUILD_ROOT
+  ? path.resolve(process.env.SKYEMU_BUILD_ROOT)
+  : undefined
 const sourceDirectory = process.env.SKYEMU_SOURCE_DIR
   ? path.resolve(process.env.SKYEMU_SOURCE_DIR)
-  : await fs.promises.mkdtemp(path.join(os.tmpdir(), "skyemu-static-source-"))
+  : buildRoot
+    ? path.join(buildRoot, "source")
+    : await fs.promises.mkdtemp(path.join(os.tmpdir(), "skyemu-static-source-"))
 const ownsSourceDirectory = !process.env.SKYEMU_SOURCE_DIR
 
 try {
   if (ownsSourceDirectory) {
+    if (buildRoot) {
+      await fs.promises.rm(sourceDirectory, { recursive: true, force: true })
+      await fs.promises.mkdir(buildRoot, { recursive: true })
+    }
     await run("git", [
       "clone",
       "--depth",

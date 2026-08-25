@@ -67,6 +67,8 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: sudo apt-get update && sudo apt-get install --yes libasound2-dev libgl-dev libopengl-dev libx11-dev libxcursor-dev libxi-dev
       - run: pnpm run build:skyemu
+        env:
+          SKYEMU_BUILD_ROOT: ${{ runner.temp }}/skyemu-static-build
       - run: pnpm run test
       - run: pnpm run package:skyemu
       - run: |
