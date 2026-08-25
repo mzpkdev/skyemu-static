@@ -130,8 +130,7 @@ out
 # pnpm
 .pnpm-store
 
-# Local release binary and WebAnvil metadata
-vendor/
+# WebAnvil metadata
 .webanvil/
 .turbo/
 

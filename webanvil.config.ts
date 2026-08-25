@@ -5,7 +5,6 @@ export default defineConfig({
     mode: "node",
     entries: {
       "./index": "src/index.ts",
-      "./cli": "src/cli.ts",
     },
     outDir: "dist",
     bundle: true,

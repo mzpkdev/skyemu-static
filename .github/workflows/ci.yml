@@ -65,8 +65,7 @@ jobs:
           node-version: 24
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: sudo apt-get update && sudo apt-get install --yes libasound2-dev libgl-dev libopengl-dev libx11-dev libxcursor-dev libxi-dev
-      - run: pnpm run build:skyemu
+      - run: sudo apt-get update && sudo apt-get install --yes libasound2-dev libgl-dev libopengl-dev libx11-dev libxcursor-dev libxi-dev xvfb
       - run: pnpm run test
       - uses: actions/upload-artifact@v4
         with:

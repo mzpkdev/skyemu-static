@@ -28,7 +28,7 @@ jobs:
       - run: |
           version="$(node -p "require('./package.json').version")"
           test "${{ github.event.release.tag_name }}" = "v$version"
-      - run: pnpm run build
-      - run: node scripts/postinstall.mjs
+      - run: sudo apt-get update && sudo apt-get install --yes libasound2-dev libgl-dev libopengl-dev libx11-dev libxcursor-dev libxi-dev xvfb
+      - run: pnpm run build:release
       - run: pnpm run test
       - run: npm publish --access public

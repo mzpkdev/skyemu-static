@@ -6,10 +6,11 @@ import * as url from "node:url"
 
 const projectRoot = url.fileURLToPath(new URL("..", import.meta.url))
 const sourceRepository = "https://github.com/skylersaleh/SkyEmu.git"
-const sourceTag = "v5"
 const sourceCommit = "46efbcbdb3b902373a09f4724e6d3b1a5acc4af3"
 const patchPath = path.join(projectRoot, "patches", "skyemu-v5-headless-http.patch")
 const outputPath = path.join(projectRoot, "vendor", "SkyEmu")
+const systemOpenGlLibrary = "/usr/lib/x86_64-linux-gnu/libOpenGL.so.0"
+const systemOpenGlDevelopmentLibrary = "/usr/lib/x86_64-linux-gnu/libOpenGL.so"
 
 const run = async (command, args, options = {}) =>
   await new Promise((resolve, reject) => {
@@ -40,39 +41,44 @@ const output = async (command, args, options = {}) => {
   return result
 }
 
-const sourceDirectory = process.env.SKYEMU_SOURCE_DIR
-  ? path.resolve(process.env.SKYEMU_SOURCE_DIR)
-  : await fs.promises.mkdtemp(path.join(os.tmpdir(), "skyemu-static-source-"))
-const ownsSourceDirectory = !process.env.SKYEMU_SOURCE_DIR
+const sourceDirectory = await fs.promises.mkdtemp(path.join(os.tmpdir(), "skyemu-static-source-"))
 
 try {
-  if (ownsSourceDirectory) {
-    await run("git", [
-      "clone",
-      "--depth",
-      "1",
-      "--branch",
-      sourceTag,
-      sourceRepository,
-      sourceDirectory,
-    ])
-  }
+  await run("git", ["clone", "--no-checkout", sourceRepository, sourceDirectory])
+  await run("git", ["-C", sourceDirectory, "checkout", "--detach", sourceCommit])
 
   const commit = await output("git", ["-C", sourceDirectory, "rev-parse", "HEAD"])
   if (commit !== sourceCommit) {
-    throw new Error(`Expected SkyEmu ${sourceTag} commit ${sourceCommit}, received ${commit}`)
+    throw new Error(`Expected SkyEmu commit ${sourceCommit}, received ${commit}`)
   }
 
   await run("git", ["-C", sourceDirectory, "apply", "--check", patchPath])
   await run("git", ["-C", sourceDirectory, "apply", patchPath])
 
   const buildDirectory = path.join(sourceDirectory, "build")
-  await run("cmake", ["-S", sourceDirectory, "-B", buildDirectory, "-DCMAKE_BUILD_TYPE=Release"])
+  const cmakeArguments = [
+    "-S",
+    sourceDirectory,
+    "-B",
+    buildDirectory,
+    "-DCMAKE_BUILD_TYPE=Release",
+    "-DCMAKE_SKIP_RPATH=ON",
+  ]
+
+  if (!fs.existsSync(systemOpenGlDevelopmentLibrary) && fs.existsSync(systemOpenGlLibrary)) {
+    const compatibilityDirectory = path.join(sourceDirectory, ".cmake-compat")
+    const compatibilityLibrary = path.join(compatibilityDirectory, "libOpenGL.so")
+    await fs.promises.mkdir(compatibilityDirectory)
+    await fs.promises.symlink(systemOpenGlLibrary, compatibilityLibrary)
+    cmakeArguments.push(`-DOPENGL_opengl_LIBRARY=${compatibilityLibrary}`)
+  }
+
+  await run("cmake", cmakeArguments)
   await run("cmake", ["--build", buildDirectory, "--parallel"])
 
   await fs.promises.mkdir(path.dirname(outputPath), { recursive: true })
   await fs.promises.copyFile(path.join(buildDirectory, "bin", "SkyEmu"), outputPath)
   await fs.promises.chmod(outputPath, 0o755)
 } finally {
-  if (ownsSourceDirectory) await fs.promises.rm(sourceDirectory, { recursive: true, force: true })
+  await fs.promises.rm(sourceDirectory, { recursive: true, force: true })
 }
