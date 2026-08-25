@@ -175,19 +175,6 @@ const acquireInstallationLock = async (): Promise<() => Promise<void>> => {
       }
     } catch (error: unknown) {
       if ((error as NodeJS.ErrnoException).code !== "EEXIST") throw error
-
-      try {
-        const lock = await fs.promises.stat(installationLock)
-        if (Date.now() - lock.mtimeMs > maximumInstallDuration) {
-          const staleLock = `${installationLock}.${process.pid}.${Date.now()}.stale`
-          await fs.promises.rename(installationLock, staleLock)
-          await fs.promises.rm(staleLock, { force: true })
-          continue
-        }
-      } catch (statError: unknown) {
-        if ((statError as NodeJS.ErrnoException).code !== "ENOENT") throw statError
-      }
-
       await wait(retryDelay)
     }
   }

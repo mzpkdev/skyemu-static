@@ -146,10 +146,6 @@ test.default("installs the packed package without a system unzip command", async
 
   await fs.promises.rm(skyEmu.skyEmuBinary, { force: true })
   await fs.promises.rm(path.join(skyEmu.skyEmuDirectory, ".skyemu-static.json"), { force: true })
-  const lockPath = path.join(skyEmu.skyEmuDirectory, ".skyemu-static.lock")
-  await fs.promises.writeFile(lockPath, "")
-  const staleLockTime = new Date(Date.now() - 121_000)
-  await fs.promises.utimes(lockPath, staleLockTime, staleLockTime)
   await Promise.all(
     [updatedEnvironment, updatedEnvironment].map(
       async (environment) =>
