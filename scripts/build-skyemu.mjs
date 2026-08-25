@@ -62,13 +62,43 @@ try {
   if (commit !== sourceCommit) {
     throw new Error(`Expected SkyEmu ${sourceTag} commit ${sourceCommit}, received ${commit}`)
   }
+  const sourceDateEpoch = await output("git", [
+    "-C",
+    sourceDirectory,
+    "show",
+    "-s",
+    "--format=%ct",
+    "HEAD",
+  ])
+  const sourcePathFlags = [
+    `-ffile-prefix-map=${sourceDirectory}=/usr/src/skyemu`,
+    `-fdebug-prefix-map=${sourceDirectory}=/usr/src/skyemu`,
+  ].join(" ")
+  const buildEnvironment = {
+    ...process.env,
+    CFLAGS: [process.env.CFLAGS, sourcePathFlags].filter(Boolean).join(" "),
+    CXXFLAGS: [process.env.CXXFLAGS, sourcePathFlags].filter(Boolean).join(" "),
+    SOURCE_DATE_EPOCH: sourceDateEpoch,
+  }
 
   await run("git", ["-C", sourceDirectory, "apply", "--check", patchPath])
   await run("git", ["-C", sourceDirectory, "apply", patchPath])
 
   const buildDirectory = path.join(sourceDirectory, "build")
-  await run("cmake", ["-S", sourceDirectory, "-B", buildDirectory, "-DCMAKE_BUILD_TYPE=Release"])
-  await run("cmake", ["--build", buildDirectory, "--parallel"])
+  await run(
+    "cmake",
+    [
+      "-S",
+      sourceDirectory,
+      "-B",
+      buildDirectory,
+      "-DCMAKE_BUILD_TYPE=Release",
+      `-DCMAKE_C_FLAGS=${sourcePathFlags}`,
+      `-DCMAKE_CXX_FLAGS=${sourcePathFlags}`,
+    ],
+    { env: buildEnvironment },
+  )
+  await run("cmake", ["--build", buildDirectory, "--parallel"], { env: buildEnvironment })
 
   await fs.promises.mkdir(path.dirname(outputPath), { recursive: true })
   await fs.promises.copyFile(path.join(buildDirectory, "bin", "SkyEmu"), outputPath)

@@ -68,9 +68,10 @@ jobs:
       - run: sudo apt-get update && sudo apt-get install --yes libasound2-dev libgl-dev libopengl-dev libx11-dev libxcursor-dev libxi-dev
       - run: pnpm run build:skyemu
       - run: pnpm run test
+      - run: pnpm run package:skyemu
       - uses: actions/upload-artifact@v4
         with:
           name: skyemu-v5-linux-x64
-          path: vendor/SkyEmu
+          path: release/SkyEmu-v5-linux-x64.zip
           if-no-files-found: error
           retention-days: 7

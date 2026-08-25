@@ -132,6 +132,7 @@ out
 
 # Local release binary and WebAnvil metadata
 vendor/
+release/
 .webanvil/
 .turbo/
 
