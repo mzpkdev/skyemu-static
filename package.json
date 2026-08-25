@@ -43,7 +43,6 @@
   "scripts": {
     "build": "wa build",
     "build:skyemu": "node scripts/build-skyemu.mjs",
-    "package:skyemu": "node scripts/package-skyemu-release.mjs",
     "check": "wa check",
     "format": "wa format",
     "lint": "wa lint",

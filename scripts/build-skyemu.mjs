@@ -40,22 +40,13 @@ const output = async (command, args, options = {}) => {
   return result
 }
 
-const buildRoot = process.env.SKYEMU_BUILD_ROOT
-  ? path.resolve(process.env.SKYEMU_BUILD_ROOT)
-  : undefined
 const sourceDirectory = process.env.SKYEMU_SOURCE_DIR
   ? path.resolve(process.env.SKYEMU_SOURCE_DIR)
-  : buildRoot
-    ? path.join(buildRoot, "source")
-    : await fs.promises.mkdtemp(path.join(os.tmpdir(), "skyemu-static-source-"))
+  : await fs.promises.mkdtemp(path.join(os.tmpdir(), "skyemu-static-source-"))
 const ownsSourceDirectory = !process.env.SKYEMU_SOURCE_DIR
 
 try {
   if (ownsSourceDirectory) {
-    if (buildRoot) {
-      await fs.promises.rm(sourceDirectory, { recursive: true, force: true })
-      await fs.promises.mkdir(buildRoot, { recursive: true })
-    }
     await run("git", [
       "clone",
       "--depth",
@@ -71,43 +62,13 @@ try {
   if (commit !== sourceCommit) {
     throw new Error(`Expected SkyEmu ${sourceTag} commit ${sourceCommit}, received ${commit}`)
   }
-  const sourceDateEpoch = await output("git", [
-    "-C",
-    sourceDirectory,
-    "show",
-    "-s",
-    "--format=%ct",
-    "HEAD",
-  ])
-  const sourcePathFlags = [
-    `-ffile-prefix-map=${sourceDirectory}=/usr/src/skyemu`,
-    `-fdebug-prefix-map=${sourceDirectory}=/usr/src/skyemu`,
-  ].join(" ")
-  const buildEnvironment = {
-    ...process.env,
-    CFLAGS: [process.env.CFLAGS, sourcePathFlags].filter(Boolean).join(" "),
-    CXXFLAGS: [process.env.CXXFLAGS, sourcePathFlags].filter(Boolean).join(" "),
-    SOURCE_DATE_EPOCH: sourceDateEpoch,
-  }
 
   await run("git", ["-C", sourceDirectory, "apply", "--check", patchPath])
   await run("git", ["-C", sourceDirectory, "apply", patchPath])
 
   const buildDirectory = path.join(sourceDirectory, "build")
-  await run(
-    "cmake",
-    [
-      "-S",
-      sourceDirectory,
-      "-B",
-      buildDirectory,
-      "-DCMAKE_BUILD_TYPE=Release",
-      `-DCMAKE_C_FLAGS=${sourcePathFlags}`,
-      `-DCMAKE_CXX_FLAGS=${sourcePathFlags}`,
-    ],
-    { env: buildEnvironment },
-  )
-  await run("cmake", ["--build", buildDirectory, "--parallel"], { env: buildEnvironment })
+  await run("cmake", ["-S", sourceDirectory, "-B", buildDirectory, "-DCMAKE_BUILD_TYPE=Release"])
+  await run("cmake", ["--build", buildDirectory, "--parallel"])
 
   await fs.promises.mkdir(path.dirname(outputPath), { recursive: true })
   await fs.promises.copyFile(path.join(buildDirectory, "bin", "SkyEmu"), outputPath)

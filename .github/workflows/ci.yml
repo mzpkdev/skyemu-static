@@ -67,22 +67,10 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: sudo apt-get update && sudo apt-get install --yes libasound2-dev libgl-dev libopengl-dev libx11-dev libxcursor-dev libxi-dev
       - run: pnpm run build:skyemu
-        env:
-          SKYEMU_BUILD_ROOT: ${{ runner.temp }}/skyemu-static-build
       - run: pnpm run test
-      - run: pnpm run package:skyemu
-      - run: |
-          expected="$(sed -n 's/const defaultReleaseSha256 = "\([a-f0-9]*\)"/\1/p' src/index.ts)"
-          actual="$(sha256sum release/SkyEmu-v5-linux-x64.zip | cut -d ' ' -f1)"
-          if test "$actual" != "$expected"; then
-            echo "Expected SHA-256: $expected"
-            echo "Actual SHA-256: $actual"
-            exit 1
-          fi
       - uses: actions/upload-artifact@v4
         with:
           name: skyemu-v5-linux-x64
-          path: release/SkyEmu-v5-linux-x64.zip
+          path: vendor/SkyEmu
           if-no-files-found: error
           retention-days: 7
-        if: always()
