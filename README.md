@@ -33,9 +33,9 @@ environment variables:
   `SKYEMU_STATIC_BINARY_URL`, `SKYEMU_STATIC_RELEASE`, or
   `SKYEMU_STATIC_ARCHIVE_NAME` when using a different archive.
 - `SKYEMU_STATIC_DOWNLOAD_TIMEOUT` sets each download attempt's timeout in
-  milliseconds. The default is 30000.
+  milliseconds. Use a positive whole number. The default is 30000.
 - `SKYEMU_STATIC_DOWNLOAD_RETRIES` sets retries after the first attempt. The
-  default is 2.
+  default is 2, and the maximum is 5.
 
 The installer also honors standard `HTTP_PROXY`, `HTTPS_PROXY`, and `NO_PROXY`
 environment variables. It records the installed archive URL and checksum, then

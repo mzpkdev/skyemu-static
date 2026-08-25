@@ -11,6 +11,8 @@ const defaultReleaseSha256 = "f3904c4be148a5115ddb427356857d6b7c3cefb1843d488cbe
 const defaultArchiveName = `SkyEmu-${defaultRelease}-Linux.zip`
 const binaryName = "SkyEmu"
 const downloadRetryDelay = 250
+const maximumDownloadRetries = 5
+const maximumDownloadTimeout = 2_147_483_647
 const packageRoot = url.fileURLToPath(new URL("..", import.meta.url))
 const release = process.env.SKYEMU_STATIC_RELEASE ?? defaultRelease
 const archiveName = process.env.SKYEMU_STATIC_ARCHIVE_NAME ?? `SkyEmu-${release}-Linux.zip`
@@ -50,12 +52,24 @@ const isRetryableStatus = (status: number): boolean =>
   status === 408 || status === 429 || status >= 500
 
 const requireValidDownloadSettings = (): void => {
-  if (!Number.isFinite(downloadTimeout) || downloadTimeout <= 0) {
-    throw new Error("SKYEMU_STATIC_DOWNLOAD_TIMEOUT must be a positive number of milliseconds")
+  if (
+    !Number.isSafeInteger(downloadTimeout) ||
+    downloadTimeout <= 0 ||
+    downloadTimeout > maximumDownloadTimeout
+  ) {
+    throw new Error(
+      "SKYEMU_STATIC_DOWNLOAD_TIMEOUT must be a positive whole number of milliseconds",
+    )
   }
 
-  if (!Number.isInteger(downloadRetries) || downloadRetries < 0) {
-    throw new Error("SKYEMU_STATIC_DOWNLOAD_RETRIES must be a non-negative integer")
+  if (
+    !Number.isSafeInteger(downloadRetries) ||
+    downloadRetries < 0 ||
+    downloadRetries > maximumDownloadRetries
+  ) {
+    throw new Error(
+      `SKYEMU_STATIC_DOWNLOAD_RETRIES must be a whole number from 0 to ${maximumDownloadRetries}`,
+    )
   }
 
   if (!/^[a-f\d]{64}$/i.test(releaseSha256)) {
