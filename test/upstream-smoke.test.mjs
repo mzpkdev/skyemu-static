@@ -38,7 +38,7 @@ const run = async (command, args, options) =>
 
 test.default("installs the pinned official SkyEmu release", async (context) => {
   const temporaryDirectory = await fs.promises.mkdtemp(
-    path.join(os.tmpdir(), "static-skyemu-smoke-"),
+    path.join(os.tmpdir(), "skyemu-static-smoke-"),
   )
   let tarballPath
 
@@ -64,7 +64,7 @@ test.default("installs the pinned official SkyEmu release", async (context) => {
     env: process.env,
   })
 
-  const installedPackage = path.join(temporaryDirectory, "node_modules", "static-skyemu")
+  const installedPackage = path.join(temporaryDirectory, "node_modules", "skyemu-static")
   const skyEmu = await import(
     url.pathToFileURL(path.join(installedPackage, "dist", "index.js")).href
   )
