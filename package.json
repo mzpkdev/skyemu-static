@@ -47,7 +47,7 @@
     "lint": "wa lint",
     "postinstall": "node scripts/postinstall.mjs",
     "prepack": "wa build",
-    "prepublishOnly": "wa check && node --test",
+    "prepublishOnly": "wa check && node --test test/install.test.mjs && node --test test/upstream-smoke.test.mjs",
     "test": "node --test test/install.test.mjs",
     "test:smoke": "node --test test/upstream-smoke.test.mjs",
     "typecheck": "wa typecheck"
