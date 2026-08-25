@@ -1,26 +1,106 @@
-import * as childProcess from "node:child_process"
 import * as crypto from "node:crypto"
 import * as fs from "node:fs"
 import * as path from "node:path"
 import * as url from "node:url"
+import AdmZip from "adm-zip"
+import { EnvHttpProxyAgent, fetch } from "undici"
 
-const releaseUrl = "https://github.com/skylersaleh/SkyEmu/releases/download/v5/SkyEmu-v5-Linux.zip"
-const releaseSha256 = "f3904c4be148a5115ddb427356857d6b7c3cefb1843d488cbe9147a92905547f"
+const defaultBinariesUrl = "https://github.com/skylersaleh/SkyEmu/releases/download"
+const defaultRelease = "v5"
+const defaultReleaseSha256 = "f3904c4be148a5115ddb427356857d6b7c3cefb1843d488cbe9147a92905547f"
 const archiveName = "SkyEmu-v5-Linux.zip"
 const binaryName = "SkyEmu"
 const packageRoot = url.fileURLToPath(new URL("..", import.meta.url))
+const release = process.env.SKYEMU_STATIC_RELEASE ?? defaultRelease
+const binariesUrl = process.env.SKYEMU_STATIC_BINARIES_URL ?? defaultBinariesUrl
+const releaseUrl =
+  process.env.SKYEMU_STATIC_BINARY_URL ??
+  `${binariesUrl.replace(/\/$/, "")}/${release}/${archiveName}`
+const releaseSha256 = process.env.SKYEMU_STATIC_SHA256 ?? defaultReleaseSha256
+const downloadTimeout = Number(process.env.SKYEMU_STATIC_DOWNLOAD_TIMEOUT ?? 30_000)
+const downloadRetries = Number(process.env.SKYEMU_STATIC_DOWNLOAD_RETRIES ?? 2)
 
 export const skyEmuDirectory = process.env.SKYEMU_STATIC_DIR ?? path.join(packageRoot, "vendor")
 export const skyEmuBinary = path.join(skyEmuDirectory, binaryName)
 
-const run = (command: string, args: string[], cwd: string): void => {
-  const result = childProcess.spawnSync(command, args, { cwd, encoding: "utf8" })
-  if (result.status === 0) return
-  throw new Error([result.error?.message, result.stdout, result.stderr].filter(Boolean).join("\n"))
-}
-
 const sha256 = (contents: Uint8Array): string =>
   crypto.createHash("sha256").update(contents).digest("hex")
+
+const wait = async (milliseconds: number): Promise<void> => {
+  await new Promise<void>((resolve) => {
+    setTimeout(resolve, milliseconds)
+  })
+}
+
+const hasProxy = (): boolean =>
+  [
+    process.env.http_proxy,
+    process.env.HTTP_PROXY,
+    process.env.https_proxy,
+    process.env.HTTPS_PROXY,
+  ].some(Boolean)
+
+const isRetryableStatus = (status: number): boolean =>
+  status === 408 || status === 429 || status >= 500
+
+const requireValidDownloadSettings = (): void => {
+  if (!Number.isFinite(downloadTimeout) || downloadTimeout <= 0) {
+    throw new Error("SKYEMU_STATIC_DOWNLOAD_TIMEOUT must be a positive number of milliseconds")
+  }
+
+  if (!Number.isInteger(downloadRetries) || downloadRetries < 0) {
+    throw new Error("SKYEMU_STATIC_DOWNLOAD_RETRIES must be a non-negative integer")
+  }
+
+  if (!/^[a-f\d]{64}$/i.test(releaseSha256)) {
+    throw new Error("SKYEMU_STATIC_SHA256 must be a SHA-256 checksum")
+  }
+}
+
+const downloadArchive = async (): Promise<Uint8Array> => {
+  requireValidDownloadSettings()
+
+  const dispatcher = hasProxy() ? new EnvHttpProxyAgent() : undefined
+  let lastError: Error | undefined
+
+  try {
+    for (let attempt = 0; attempt <= downloadRetries; attempt += 1) {
+      let response: Awaited<ReturnType<typeof fetch>> | undefined
+
+      try {
+        response = await fetch(releaseUrl, {
+          dispatcher,
+          signal: AbortSignal.timeout(downloadTimeout),
+        })
+      } catch (error: unknown) {
+        lastError = error instanceof Error ? error : new Error(String(error))
+      }
+
+      if (response?.ok) {
+        try {
+          return new Uint8Array(await response.arrayBuffer())
+        } catch (error: unknown) {
+          lastError = error instanceof Error ? error : new Error(String(error))
+        }
+      }
+
+      if (response && !response.ok) {
+        await response.body?.cancel()
+        const error = new Error(
+          `Could not download SkyEmu ${release}: ${response.status} ${response.statusText}`,
+        )
+        if (!isRetryableStatus(response.status)) throw error
+        lastError = error
+      }
+
+      if (attempt < downloadRetries) await wait(250 * 2 ** attempt)
+    }
+  } finally {
+    await dispatcher?.close()
+  }
+
+  throw lastError ?? new Error(`Could not download SkyEmu ${release}`)
+}
 
 const requireLinuxX64 = (): void => {
   if (process.platform !== "linux" || process.arch !== "x64") {
@@ -45,24 +125,16 @@ export const setupSkyEmu = async (): Promise<void> => {
   const temporaryDirectory = await fs.promises.mkdtemp(path.join(skyEmuDirectory, ".download-"))
 
   try {
-    const archivePath = path.join(temporaryDirectory, archiveName)
-    const response = await fetch(releaseUrl)
-    if (!response.ok) {
-      throw new Error(`Could not download SkyEmu v5: ${response.status} ${response.statusText}`)
-    }
-
-    const archive = new Uint8Array(await response.arrayBuffer())
+    const archive = await downloadArchive()
     if (sha256(archive) !== releaseSha256) {
-      throw new Error("SkyEmu v5 archive checksum did not match the expected SHA-256")
+      throw new Error(`SkyEmu ${release} archive checksum did not match the expected SHA-256`)
     }
 
-    await fs.promises.writeFile(archivePath, archive)
-    run("unzip", ["-q", archivePath, "-d", temporaryDirectory], temporaryDirectory)
+    const binary = new AdmZip(Buffer.from(archive)).readFile(binaryName)
+    if (!binary) throw new Error(`SkyEmu ${release} archive did not contain ${binaryName}`)
 
-    const extractedBinary = path.join(temporaryDirectory, binaryName)
-    await fs.promises.access(extractedBinary, fs.constants.F_OK)
     const temporaryBinary = `${skyEmuBinary}.tmp`
-    await fs.promises.copyFile(extractedBinary, temporaryBinary)
+    await fs.promises.writeFile(temporaryBinary, binary)
     await fs.promises.chmod(temporaryBinary, 0o755)
     await fs.promises.rename(temporaryBinary, skyEmuBinary)
   } finally {
