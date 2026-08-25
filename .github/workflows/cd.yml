@@ -1,20 +1,21 @@
 name: CD
 
 on:
-  push:
-    tags:
-      - "v*"
+  release:
+    types: [published]
 
 permissions:
-  contents: write
+  contents: read
   id-token: write
 
 jobs:
-  release:
-    name: Release
+  publish:
+    name: Publish
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.release.tag_name }}
       - uses: pnpm/action-setup@v4
         with:
           version: 11.9.0
@@ -24,30 +25,10 @@ jobs:
           cache: pnpm
           registry-url: https://registry.npmjs.org
       - run: pnpm install --frozen-lockfile
-      - run: sudo apt-get update && sudo apt-get install --yes libasound2-dev libgl-dev libopengl-dev libx11-dev libxcursor-dev libxi-dev
       - run: |
           version="$(node -p "require('./package.json').version")"
-          test "$GITHUB_REF_NAME" = "v$version"
-      - run: pnpm run build:skyemu
-        env:
-          SKYEMU_BUILD_ROOT: ${{ runner.temp }}/skyemu-static-build
+          test "${{ github.event.release.tag_name }}" = "v$version"
+      - run: pnpm run build
+      - run: node scripts/postinstall.mjs
       - run: pnpm run test
-      - run: pnpm run package:skyemu
-      - run: |
-          expected="$(sed -n 's/const defaultReleaseSha256 = "\([a-f0-9]*\)"/\1/p' src/index.ts)"
-          actual="$(sha256sum release/SkyEmu-v5-linux-x64.zip | cut -d ' ' -f1)"
-          if test "$actual" != "$expected"; then
-            echo "Expected SHA-256: $expected"
-            echo "Actual SHA-256: $actual"
-            exit 1
-          fi
-      - uses: actions/upload-artifact@v4
-        with:
-          name: skyemu-v5-linux-x64
-          path: release/SkyEmu-v5-linux-x64.zip
-          if-no-files-found: error
-          retention-days: 90
-      - run: gh release create "$GITHUB_REF_NAME" release/SkyEmu-v5-linux-x64.zip --title "$GITHUB_REF_NAME" --generate-notes
-        env:
-          GH_TOKEN: ${{ github.token }}
       - run: npm publish --access public
