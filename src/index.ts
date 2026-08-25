@@ -27,8 +27,8 @@ const downloadRetries = Number(process.env.SKYEMU_STATIC_DOWNLOAD_RETRIES ?? 2)
 export const skyEmuDirectory = process.env.SKYEMU_STATIC_DIR ?? path.join(packageRoot, "vendor")
 export const skyEmuBinary = path.join(skyEmuDirectory, binaryName)
 
-const installationLock = path.join(skyEmuDirectory, ".skyemu-static.lock")
-const installationMarker = path.join(skyEmuDirectory, ".skyemu-static.json")
+const installationLock = path.join(skyEmuDirectory, ".static-skyemu.lock")
+const installationMarker = path.join(skyEmuDirectory, ".static-skyemu.json")
 const installationMetadata = `${JSON.stringify({ archiveUrl: releaseUrl, sha256: releaseSha256 })}\n`
 
 const sha256 = (contents: Uint8Array): string =>
@@ -131,7 +131,7 @@ const downloadArchive = async (): Promise<Uint8Array> => {
 
 const requireLinuxX64 = (): void => {
   if (process.platform !== "linux" || process.arch !== "x64") {
-    throw new Error("skyemu-static supports the official Linux x64 release only")
+    throw new Error("static-skyemu supports the official Linux x64 release only")
   }
 }
 
@@ -188,7 +188,7 @@ const acquireInstallationLock = async (): Promise<() => Promise<void>> => {
     }
   }
 
-  throw new Error("Timed out while waiting for another skyemu-static installation")
+  throw new Error("Timed out while waiting for another static-skyemu installation")
 }
 
 export const setupSkyEmu = async (): Promise<void> => {
