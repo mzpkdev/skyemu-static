@@ -142,7 +142,8 @@ const hasCurrentInstallation = async (): Promise<boolean> => {
 const acquireInstallationLock = async (): Promise<() => Promise<void>> => {
   const retryDelay = 100
   const totalDownloadTime = downloadTimeout * (downloadRetries + 1)
-  const deadline = Date.now() + Math.max(120_000, totalDownloadTime + 10_000)
+  const maximumInstallDuration = Math.max(120_000, totalDownloadTime + 10_000)
+  const deadline = Date.now() + maximumInstallDuration
 
   while (Date.now() < deadline) {
     try {
@@ -156,6 +157,17 @@ const acquireInstallationLock = async (): Promise<() => Promise<void>> => {
       }
     } catch (error: unknown) {
       if ((error as NodeJS.ErrnoException).code !== "EEXIST") throw error
+
+      try {
+        const lock = await fs.promises.stat(installationLock)
+        if (Date.now() - lock.mtimeMs > maximumInstallDuration) {
+          await fs.promises.rm(installationLock, { force: true })
+          continue
+        }
+      } catch (statError: unknown) {
+        if ((statError as NodeJS.ErrnoException).code !== "ENOENT") throw statError
+      }
+
       await wait(retryDelay)
     }
   }
