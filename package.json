@@ -1,8 +1,16 @@
 {
   "name": "static-skyemu",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Install-ready SkyEmu v5 Linux x64 binary",
+  "homepage": "https://github.com/mzpkdev/static-skyemu#readme",
+  "bugs": {
+    "url": "https://github.com/mzpkdev/static-skyemu/issues"
+  },
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mzpkdev/static-skyemu.git"
+  },
   "files": [
     "dist",
     "types",
@@ -23,6 +31,8 @@
     "format": "wa format",
     "lint": "wa lint",
     "postinstall": "node dist/cli.js",
+    "prepack": "wa build",
+    "prepublishOnly": "wa check",
     "typecheck": "wa typecheck"
   },
   "devDependencies": {
