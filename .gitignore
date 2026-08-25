@@ -37,6 +37,9 @@ bower_components
 # Compiled binary addons (https://nodejs.org/api/addons.html)
 build/Release
 
+# Package build output
+dist/
+
 # Dependency directories
 node_modules/
 jspm_packages/
@@ -80,7 +83,6 @@ out
 
 # Nuxt.js build / generate output
 .nuxt
-dist
 .output
 
 # Gatsby files
@@ -127,6 +129,11 @@ dist
 
 # pnpm
 .pnpm-store
+
+# Local release binary and WebAnvil metadata
+vendor/
+.webanvil/
+.turbo/
 
 # yarn v3
 .pnp.*
