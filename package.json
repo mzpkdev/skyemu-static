@@ -8,15 +8,15 @@
     "skyemu",
     "x64"
   ],
-  "homepage": "https://github.com/mzpkdev/static-skyemu#readme",
+  "homepage": "https://github.com/mzpkdev/skyemu-static#readme",
   "bugs": {
-    "url": "https://github.com/mzpkdev/static-skyemu/issues"
+    "url": "https://github.com/mzpkdev/skyemu-static/issues"
   },
   "license": "MIT",
   "author": "Mateusz Pietrzak <mateusz@mzpk.dev>",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/mzpkdev/static-skyemu.git"
+    "url": "git+https://github.com/mzpkdev/skyemu-static.git"
   },
   "files": [
     "dist",
