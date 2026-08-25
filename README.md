@@ -3,7 +3,7 @@
 Install-ready SkyEmu v5 Linux x64 binary for Node projects.
 
 ```sh
-pnpm add static-skyemu
+npm install static-skyemu
 ```
 
 The package's install hook downloads the official SkyEmu v5 archive, validates

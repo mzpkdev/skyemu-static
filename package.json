@@ -1,12 +1,19 @@
 {
   "name": "static-skyemu",
-  "version": "0.1.0",
+  "version": "0.0.0",
   "description": "Install-ready SkyEmu v5 Linux x64 binary",
+  "keywords": [
+    "binary",
+    "linux",
+    "skyemu",
+    "x64"
+  ],
   "homepage": "https://github.com/mzpkdev/static-skyemu#readme",
   "bugs": {
     "url": "https://github.com/mzpkdev/static-skyemu/issues"
   },
   "license": "MIT",
+  "author": "Mateusz Pietrzak <mateusz@mzpk.dev>",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/mzpkdev/static-skyemu.git"
@@ -18,7 +25,14 @@
     "README.md",
     "LICENSE"
   ],
+  "os": [
+    "linux"
+  ],
+  "cpu": [
+    "x64"
+  ],
   "type": "module",
+  "main": "./dist/index.js",
   "types": "./types/index.d.ts",
   "exports": {
     ".": {
