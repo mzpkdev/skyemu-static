@@ -1,0 +1,38 @@
+diff --git a/src/main.c b/src/main.c
+index bfeb587..a1b1b2d 100644
+--- a/src/main.c
++++ b/src/main.c
+@@ -8664,6 +8664,7 @@ static void se_init(){
+     if(http_server_mode)emu_state.run_mode=SB_MODE_PAUSE;
+   }
+ }
++static void headless_mode(void);
+ static void init(void) {
+   #if defined(EMSCRIPTEN)
+   em_init_fs();
+@@ -8689,6 +8690,7 @@ static void init(void) {
+   sg_setup(&(sg_desc){
+       .context = sapp_sgcontext()
+   });
++  if(emu_state.cmd_line_arg_count >3&&strcmp("http_server",emu_state.cmd_line_args[1])==0)headless_mode();
+   simgui_setup(&(simgui_desc_t){ .dpi_scale= se_dpi_scale()});
+   se_init();
+   se_imgui_theme();
+@@ -8830,7 +8832,7 @@ bool se_run_ar_cheat(const uint32_t* buffer, uint32_t size){
+   return false;
+ }
+ 
+-static void headless_mode(){
++static void headless_mode(void){
+   //Leave here so the entry point still exists
+ #ifdef ENABLE_HTTP_CONTROL_SERVER
+   se_init();
+@@ -8880,8 +8882,6 @@ sapp_desc sokol_main(int argc, char* argv[]) {
+     emu_state.cmd_line_arg_count =argc-1;
+     emu_state.cmd_line_args =argv+1;
+   }
+-  if(emu_state.cmd_line_arg_count >3&&strcmp("http_server",emu_state.cmd_line_args[1])==0)headless_mode();
+-
+   #ifdef SE_PLATFORM_IOS
+   se_ios_set_documents_working_directory();
+   #endif 

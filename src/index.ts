@@ -5,17 +5,19 @@ import * as url from "node:url"
 import AdmZip from "adm-zip"
 import { EnvHttpProxyAgent, fetch } from "undici"
 
-const defaultBinariesUrl = "https://github.com/skylersaleh/SkyEmu/releases/download"
-const defaultRelease = "v5"
-const defaultReleaseSha256 = "f3904c4be148a5115ddb427356857d6b7c3cefb1843d488cbe9147a92905547f"
-const defaultArchiveName = `SkyEmu-${defaultRelease}-Linux.zip`
+const defaultBinariesUrl = "https://github.com/mzpkdev/skyemu-static/releases/download"
+const defaultRelease = "v0.0.1"
+const defaultReleaseSha256 = "3bb25104c72bfc6c0024ed38519052e690a183344159dcde3c445e1ef4a8a7a0"
+const defaultArchiveName = "SkyEmu-v5-linux-x64.zip"
 const binaryName = "SkyEmu"
 const downloadRetryDelay = 250
 const maximumDownloadRetries = 5
 const maximumDownloadTimeout = 2_147_483_647
 const packageRoot = url.fileURLToPath(new URL("..", import.meta.url))
 const release = process.env.SKYEMU_STATIC_RELEASE ?? defaultRelease
-const archiveName = process.env.SKYEMU_STATIC_ARCHIVE_NAME ?? `SkyEmu-${release}-Linux.zip`
+const archiveName =
+  process.env.SKYEMU_STATIC_ARCHIVE_NAME ??
+  (release === defaultRelease ? defaultArchiveName : `SkyEmu-${release}-Linux.zip`)
 const binariesUrl = process.env.SKYEMU_STATIC_BINARIES_URL ?? defaultBinariesUrl
 const releaseUrl =
   process.env.SKYEMU_STATIC_BINARY_URL ??

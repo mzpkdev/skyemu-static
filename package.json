@@ -1,6 +1,6 @@
 {
   "name": "skyemu-static",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "Install-ready SkyEmu v5 Linux x64 binary",
   "keywords": [
     "binary",
@@ -42,13 +42,14 @@
   },
   "scripts": {
     "build": "wa build",
+    "build:skyemu": "node scripts/build-skyemu.mjs",
     "check": "wa check",
     "format": "wa format",
     "lint": "wa lint",
     "postinstall": "node scripts/postinstall.mjs",
     "prepack": "wa build",
-    "prepublishOnly": "wa check && node --test test/install.test.mjs && node --test test/upstream-smoke.test.mjs",
-    "test": "node --test test/install.test.mjs",
+    "prepublishOnly": "wa check && node --test --test-concurrency=1 test/*.test.mjs",
+    "test": "node --test --test-concurrency=1 test/*.test.mjs",
     "test:smoke": "node --test test/upstream-smoke.test.mjs",
     "typecheck": "wa typecheck"
   },
