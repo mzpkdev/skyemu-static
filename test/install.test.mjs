@@ -69,7 +69,7 @@ test.default("installs the packed package without a system unzip command", async
   const address = server.address()
   assert.ok(address && typeof address !== "string")
   const temporaryDirectory = await fs.promises.mkdtemp(
-    path.join(os.tmpdir(), "static-skyemu-test-"),
+    path.join(os.tmpdir(), "skyemu-static-test-"),
   )
   let tarballPath
 
@@ -115,7 +115,7 @@ test.default("installs the packed package without a system unzip command", async
   assert.equal(requests, 2)
   assert.deepEqual(requestedUrls, ["/test/SkyEmu-test-Linux.zip", "/test/SkyEmu-test-Linux.zip"])
 
-  const installedPackage = path.join(temporaryDirectory, "node_modules", "static-skyemu")
+  const installedPackage = path.join(temporaryDirectory, "node_modules", "skyemu-static")
   const skyEmu = await import(
     url.pathToFileURL(path.join(installedPackage, "dist", "index.js")).href
   )
@@ -139,8 +139,8 @@ test.default("installs the packed package without a system unzip command", async
   assert.equal(requests, 3)
 
   await fs.promises.rm(skyEmu.skyEmuBinary, { force: true })
-  await fs.promises.rm(path.join(skyEmu.skyEmuDirectory, ".static-skyemu.json"), { force: true })
-  const lockPath = path.join(skyEmu.skyEmuDirectory, ".static-skyemu.lock")
+  await fs.promises.rm(path.join(skyEmu.skyEmuDirectory, ".skyemu-static.json"), { force: true })
+  const lockPath = path.join(skyEmu.skyEmuDirectory, ".skyemu-static.lock")
   await fs.promises.writeFile(lockPath, "")
   const staleLockTime = new Date(Date.now() - 121_000)
   await fs.promises.utimes(lockPath, staleLockTime, staleLockTime)
@@ -157,7 +157,7 @@ test.default("installs the packed package without a system unzip command", async
 
   assert.deepEqual(
     JSON.parse(
-      await fs.promises.readFile(path.join(skyEmu.skyEmuDirectory, ".static-skyemu.json"), "utf8"),
+      await fs.promises.readFile(path.join(skyEmu.skyEmuDirectory, ".skyemu-static.json"), "utf8"),
     ),
     {
       archiveUrl: `http://127.0.0.1:${address.port}/test/SkyEmu-test-Linux.zip`,

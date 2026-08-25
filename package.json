@@ -1,5 +1,5 @@
 {
-  "name": "static-skyemu",
+  "name": "skyemu-static",
   "version": "0.0.0",
   "description": "Install-ready SkyEmu v5 Linux x64 binary",
   "keywords": [
