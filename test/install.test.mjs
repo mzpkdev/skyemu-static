@@ -86,14 +86,19 @@ test.default("installs the packed package without a system unzip command", async
 
   const npmCache = path.join(temporaryDirectory, "npm-cache")
   const tarballName = (
-    await run("npm", ["pack", "--silent", "--cache", npmCache], {
-      cwd: projectRoot,
-    })
+    await run(
+      "npm",
+      ["pack", "--silent", "--cache", npmCache, "--pack-destination", temporaryDirectory],
+      {
+        cwd: projectRoot,
+        env: { ...process.env, npm_config_dry_run: "false" },
+      },
+    )
   )
     .split("\n")
     .at(-1)
   assert.ok(tarballName)
-  tarballPath = path.join(projectRoot, tarballName)
+  tarballPath = path.join(temporaryDirectory, tarballName)
   await fs.promises.writeFile(path.join(temporaryDirectory, "package.json"), '{"private":true}')
 
   const installationEnvironment = {
@@ -105,6 +110,7 @@ test.default("installs the packed package without a system unzip command", async
     SKYEMU_STATIC_RELEASE: "test",
     SKYEMU_STATIC_SHA256: archiveSha256,
     no_proxy: "127.0.0.1,localhost",
+    npm_config_dry_run: "false",
   }
 
   await run("npm", ["install", "--ignore-scripts=false", "--cache", npmCache, tarballPath], {

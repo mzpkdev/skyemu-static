@@ -49,19 +49,24 @@ test.default("installs the pinned official SkyEmu release", async (context) => {
 
   const npmCache = path.join(temporaryDirectory, "npm-cache")
   const tarballName = (
-    await run("npm", ["pack", "--silent", "--cache", npmCache], {
-      cwd: projectRoot,
-    })
+    await run(
+      "npm",
+      ["pack", "--silent", "--cache", npmCache, "--pack-destination", temporaryDirectory],
+      {
+        cwd: projectRoot,
+        env: { ...process.env, npm_config_dry_run: "false" },
+      },
+    )
   )
     .split("\n")
     .at(-1)
   assert.ok(tarballName)
-  tarballPath = path.join(projectRoot, tarballName)
+  tarballPath = path.join(temporaryDirectory, tarballName)
   await fs.promises.writeFile(path.join(temporaryDirectory, "package.json"), '{"private":true}')
 
   await run("npm", ["install", "--ignore-scripts=false", "--cache", npmCache, tarballPath], {
     cwd: temporaryDirectory,
-    env: process.env,
+    env: { ...process.env, npm_config_dry_run: "false" },
   })
 
   const installedPackage = path.join(temporaryDirectory, "node_modules", "skyemu-static")
