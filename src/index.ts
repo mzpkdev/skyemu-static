@@ -7,7 +7,7 @@ import { EnvHttpProxyAgent, fetch } from "undici"
 
 const defaultBinariesUrl = "https://github.com/mzpkdev/skyemu-static/releases/download"
 const defaultRelease = "v0.0.1"
-const defaultReleaseSha256 = "3bb25104c72bfc6c0024ed38519052e690a183344159dcde3c445e1ef4a8a7a0"
+const defaultReleaseSha256 = "f12ab515142bfb889663f3f63441b95c610ab627ed1a93a45356cc5e5349d856"
 const defaultArchiveName = "SkyEmu-v5-linux-x64.zip"
 const binaryName = "SkyEmu"
 const downloadRetryDelay = 250

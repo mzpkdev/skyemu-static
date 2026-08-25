@@ -69,6 +69,10 @@ jobs:
       - run: pnpm run build:skyemu
       - run: pnpm run test
       - run: pnpm run package:skyemu
+      - run: |
+          expected="$(sed -n 's/const defaultReleaseSha256 = "\([a-f0-9]*\)"/\1/p' src/index.ts)"
+          actual="$(sha256sum release/SkyEmu-v5-linux-x64.zip | cut -d ' ' -f1)"
+          test "$actual" = "$expected"
       - uses: actions/upload-artifact@v4
         with:
           name: skyemu-v5-linux-x64
