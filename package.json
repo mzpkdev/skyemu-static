@@ -1,6 +1,6 @@
 {
   "name": "skyemu-static",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "Install-ready SkyEmu v5 Linux x64 binary",
   "keywords": [
     "binary",
@@ -42,6 +42,7 @@
   },
   "scripts": {
     "build": "wa build",
+    "build:skyemu": "node scripts/build-skyemu.mjs",
     "check": "wa check",
     "format": "wa format",
     "lint": "wa lint",

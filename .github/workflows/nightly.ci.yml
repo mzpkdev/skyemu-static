@@ -23,4 +23,6 @@ jobs:
           node-version: 24
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - run: sudo apt-get update && sudo apt-get install --yes libasound2-dev libgl-dev libx11-dev libxcursor-dev libxi-dev
+      - run: pnpm run build:skyemu
       - run: pnpm run test:smoke
