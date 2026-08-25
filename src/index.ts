@@ -8,20 +8,25 @@ import { EnvHttpProxyAgent, fetch } from "undici"
 const defaultBinariesUrl = "https://github.com/skylersaleh/SkyEmu/releases/download"
 const defaultRelease = "v5"
 const defaultReleaseSha256 = "f3904c4be148a5115ddb427356857d6b7c3cefb1843d488cbe9147a92905547f"
-const archiveName = "SkyEmu-v5-Linux.zip"
+const defaultArchiveName = `SkyEmu-${defaultRelease}-Linux.zip`
 const binaryName = "SkyEmu"
 const packageRoot = url.fileURLToPath(new URL("..", import.meta.url))
 const release = process.env.SKYEMU_STATIC_RELEASE ?? defaultRelease
+const archiveName = process.env.SKYEMU_STATIC_ARCHIVE_NAME ?? `SkyEmu-${release}-Linux.zip`
 const binariesUrl = process.env.SKYEMU_STATIC_BINARIES_URL ?? defaultBinariesUrl
 const releaseUrl =
   process.env.SKYEMU_STATIC_BINARY_URL ??
   `${binariesUrl.replace(/\/$/, "")}/${release}/${archiveName}`
-const releaseSha256 = process.env.SKYEMU_STATIC_SHA256 ?? defaultReleaseSha256
+const releaseSha256 = (process.env.SKYEMU_STATIC_SHA256 ?? defaultReleaseSha256).toLowerCase()
 const downloadTimeout = Number(process.env.SKYEMU_STATIC_DOWNLOAD_TIMEOUT ?? 30_000)
 const downloadRetries = Number(process.env.SKYEMU_STATIC_DOWNLOAD_RETRIES ?? 2)
 
 export const skyEmuDirectory = process.env.SKYEMU_STATIC_DIR ?? path.join(packageRoot, "vendor")
 export const skyEmuBinary = path.join(skyEmuDirectory, binaryName)
+
+const installationLock = path.join(skyEmuDirectory, ".skyemu-static.lock")
+const installationMarker = path.join(skyEmuDirectory, ".skyemu-static.json")
+const installationMetadata = `${JSON.stringify({ archiveUrl: releaseUrl, sha256: releaseSha256 })}\n`
 
 const sha256 = (contents: Uint8Array): string =>
   crypto.createHash("sha256").update(contents).digest("hex")
@@ -54,6 +59,13 @@ const requireValidDownloadSettings = (): void => {
 
   if (!/^[a-f\d]{64}$/i.test(releaseSha256)) {
     throw new Error("SKYEMU_STATIC_SHA256 must be a SHA-256 checksum")
+  }
+
+  if (
+    (release !== defaultRelease || archiveName !== defaultArchiveName) &&
+    !process.env.SKYEMU_STATIC_SHA256
+  ) {
+    throw new Error("SKYEMU_STATIC_SHA256 is required for a non-default SkyEmu release")
   }
 }
 
@@ -117,27 +129,73 @@ const hasExecutable = async (filePath: string): Promise<boolean> => {
   }
 }
 
-export const setupSkyEmu = async (): Promise<void> => {
-  requireLinuxX64()
-  await fs.promises.mkdir(skyEmuDirectory, { recursive: true })
-  if (await hasExecutable(skyEmuBinary)) return
-
-  const temporaryDirectory = await fs.promises.mkdtemp(path.join(skyEmuDirectory, ".download-"))
+const hasCurrentInstallation = async (): Promise<boolean> => {
+  if (!(await hasExecutable(skyEmuBinary))) return false
 
   try {
-    const archive = await downloadArchive()
-    if (sha256(archive) !== releaseSha256) {
-      throw new Error(`SkyEmu ${release} archive checksum did not match the expected SHA-256`)
+    return (await fs.promises.readFile(installationMarker, "utf8")) === installationMetadata
+  } catch {
+    return false
+  }
+}
+
+const acquireInstallationLock = async (): Promise<() => Promise<void>> => {
+  const retryDelay = 100
+  const totalDownloadTime = downloadTimeout * (downloadRetries + 1)
+  const deadline = Date.now() + Math.max(120_000, totalDownloadTime + 10_000)
+
+  while (Date.now() < deadline) {
+    try {
+      const handle = await fs.promises.open(installationLock, "wx")
+      return async (): Promise<void> => {
+        try {
+          await handle.close()
+        } finally {
+          await fs.promises.rm(installationLock, { force: true })
+        }
+      }
+    } catch (error: unknown) {
+      if ((error as NodeJS.ErrnoException).code !== "EEXIST") throw error
+      await wait(retryDelay)
     }
+  }
 
-    const binary = new AdmZip(Buffer.from(archive)).readFile(binaryName)
-    if (!binary) throw new Error(`SkyEmu ${release} archive did not contain ${binaryName}`)
+  throw new Error("Timed out while waiting for another skyemu-static installation")
+}
 
-    const temporaryBinary = `${skyEmuBinary}.tmp`
-    await fs.promises.writeFile(temporaryBinary, binary)
-    await fs.promises.chmod(temporaryBinary, 0o755)
-    await fs.promises.rename(temporaryBinary, skyEmuBinary)
+export const setupSkyEmu = async (): Promise<void> => {
+  requireLinuxX64()
+  requireValidDownloadSettings()
+  await fs.promises.mkdir(skyEmuDirectory, { recursive: true })
+  if (await hasCurrentInstallation()) return
+
+  const releaseInstallationLock = await acquireInstallationLock()
+
+  try {
+    if (await hasCurrentInstallation()) return
+
+    const temporaryDirectory = await fs.promises.mkdtemp(path.join(skyEmuDirectory, ".download-"))
+
+    try {
+      const archive = await downloadArchive()
+      if (sha256(archive) !== releaseSha256) {
+        throw new Error(`SkyEmu ${release} archive checksum did not match the expected SHA-256`)
+      }
+
+      const binary = new AdmZip(Buffer.from(archive)).readFile(binaryName)
+      if (!binary) throw new Error(`SkyEmu ${release} archive did not contain ${binaryName}`)
+
+      const temporaryBinary = path.join(temporaryDirectory, binaryName)
+      const temporaryMarker = path.join(temporaryDirectory, path.basename(installationMarker))
+      await fs.promises.writeFile(temporaryBinary, binary)
+      await fs.promises.chmod(temporaryBinary, 0o755)
+      await fs.promises.writeFile(temporaryMarker, installationMetadata)
+      await fs.promises.rename(temporaryBinary, skyEmuBinary)
+      await fs.promises.rename(temporaryMarker, installationMarker)
+    } finally {
+      await fs.promises.rm(temporaryDirectory, { recursive: true, force: true })
+    }
   } finally {
-    await fs.promises.rm(temporaryDirectory, { recursive: true, force: true })
+    await releaseInstallationLock()
   }
 }
