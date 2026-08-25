@@ -6,8 +6,9 @@ Install-ready SkyEmu v5 Linux x64 binary for Node projects.
 npm install skyemu-static
 ```
 
-The package's install hook downloads the patched SkyEmu v5 Linux x64 archive,
-validates its SHA-256, and writes the binary to `vendor/SkyEmu`.
+The package's install hook downloads the patched SkyEmu v5 Linux x64 archive from
+the package's GitHub release, validates its SHA-256, and writes the binary to
+`vendor/SkyEmu`.
 
 ```ts
 import { skyEmuBinary } from "skyemu-static"
@@ -20,12 +21,15 @@ archive tool.
 
 `SKYEMU_STATIC_DIR` changes the binary directory.
 
+The default archive is built from upstream SkyEmu v5 commit
+`46efbcbdb3b902373a09f4724e6d3b1a5acc4af3` with the tracked HTTP headless
+startup patch in this repository.
+
 For private mirrors or a release hosted elsewhere, use these install-time
 environment variables:
 
 - `SKYEMU_STATIC_BINARIES_URL` changes the release-download base URL.
-- `SKYEMU_STATIC_RELEASE` changes the release tag and selects
-  `SkyEmu-<tag>-Linux.zip`.
+- `SKYEMU_STATIC_RELEASE` changes the release tag.
 - `SKYEMU_STATIC_ARCHIVE_NAME` changes the archive name when a release uses a
   different naming convention.
 - `SKYEMU_STATIC_BINARY_URL` uses an exact archive URL.
