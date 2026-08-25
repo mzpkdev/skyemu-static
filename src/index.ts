@@ -10,7 +10,7 @@ const archiveName = "SkyEmu-v5-Linux.zip"
 const binaryName = "SkyEmu"
 const packageRoot = url.fileURLToPath(new URL("..", import.meta.url))
 
-export const skyEmuDirectory = process.env.STATIC_SKYEMU_DIR ?? path.join(packageRoot, "vendor")
+export const skyEmuDirectory = process.env.SKYEMU_STATIC_DIR ?? path.join(packageRoot, "vendor")
 export const skyEmuBinary = path.join(skyEmuDirectory, binaryName)
 
 const run = (command: string, args: string[], cwd: string): void => {
@@ -24,7 +24,7 @@ const sha256 = (contents: Uint8Array): string =>
 
 const requireLinuxX64 = (): void => {
   if (process.platform !== "linux" || process.arch !== "x64") {
-    throw new Error("static-skyemu supports the official Linux x64 release only")
+    throw new Error("skyemu-static supports the official Linux x64 release only")
   }
 }
 
